@@ -1,4 +1,4 @@
-package cowing.project.cowingmsatrading.domain.entity;
+package cowing.project.cowingmsatrading.trade.domain.entity.order;
 
 import lombok.Getter;
 
