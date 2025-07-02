@@ -1,4 +1,4 @@
-package cowing.project.cowingmsatrading.domain.entity;
+package cowing.project.cowingmsatrading.trade.domain.entity.order;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -31,7 +31,7 @@ public class Trade {
     @Column(nullable = false, name = "trade_price")
     private Long tradePrice;
 
-    @Column(nullable = false, name = "trade_quantity")
+    @Column(nullable = false, name = "trade_quantity", precision = 20, scale = 8)
     private BigDecimal tradeQuantity;
 
     @Column(nullable = false)
