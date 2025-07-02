@@ -27,17 +27,6 @@ public class OrderService {
     private final TradeRepository tradeRepository;
     private final UserRepository userRepository;
 
-    @PostConstruct
-    public void createTestUser() {
-        User testUser = User.builder()
-                .username("testUser")
-                .passwd("password")
-                .email("test@example.com")
-                .nickname("Test User")
-                .uHoldings(100000L)
-                .build();
-        userRepository.save(testUser);
-    }
 
     @Transactional
     protected void insertToOrderHistory(Order order) {
