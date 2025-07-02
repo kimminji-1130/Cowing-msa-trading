@@ -20,7 +20,6 @@ public class TokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // 토큰에서 사용자명 추출
     public String getUsername(String token) {
         return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload().get("sub", String.class);
     }
