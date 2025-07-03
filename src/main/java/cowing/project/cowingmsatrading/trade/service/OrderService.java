@@ -5,12 +5,10 @@ import cowing.project.cowingmsatrading.trade.domain.entity.order.OrderPosition;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Status;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Trade;
 import cowing.project.cowingmsatrading.trade.domain.entity.user.Portfolio;
-import cowing.project.cowingmsatrading.trade.domain.entity.user.User;
 import cowing.project.cowingmsatrading.trade.domain.repository.OrderRepository;
 import cowing.project.cowingmsatrading.trade.domain.repository.PortfolioRepository;
 import cowing.project.cowingmsatrading.trade.domain.repository.TradeRepository;
 import cowing.project.cowingmsatrading.trade.domain.repository.UserRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,18 +27,18 @@ public class OrderService {
 
 
     @Transactional
-    protected void insertToOrderHistory(Order order) {
+    public void insertToOrderHistory(Order order) {
         orderRepository.save(order);
     }
 
     @Transactional
-    protected void modifyOrderStatus(Order order) {
+    public void modifyOrderStatus(Order order) {
         order.setStatus(Status.COMPLETED);
         orderRepository.save(order);
     }
 
     @Transactional
-    protected void updatePortfolio(Order order, BigDecimal totalQuantity, BigDecimal totalPrice) {
+    public void updatePortfolio(Order order, BigDecimal totalQuantity, BigDecimal totalPrice) {
         // 포트폴리오를 조회해서 없다면 새로이 생성하고, 있다면 다음 코드부터 총체적인 계산을 실행한다.
         portfolioRepository.findByUsernameAndMarketCode(order.getUsername(), order.getMarketCode())
                 .ifPresentOrElse(
@@ -81,7 +79,7 @@ public class OrderService {
     }
 
     @Transactional
-    protected void saveTradeHistory(Order order, BigDecimal currentTradeQuantity, BigDecimal currentTradePrice) {
+    public void saveTradeHistory(Order order, BigDecimal currentTradeQuantity, BigDecimal currentTradePrice) {
         tradeRepository.save(
                 Trade.builder()
                         .orderUuid(order.getUuid())
@@ -95,7 +93,7 @@ public class OrderService {
     }
 
     @Transactional
-    protected void updateUserAssets(String username, Long totalPrice) {
+    public void updateUserAssets(String username, Long totalPrice) {
         // 예시로, 사용자의 자산을 조회하고, 총 금액을 차감하는 방식으로 구현
         userRepository.findByUsername(username).ifPresent(user -> {
             user.updateHoldings(totalPrice);
