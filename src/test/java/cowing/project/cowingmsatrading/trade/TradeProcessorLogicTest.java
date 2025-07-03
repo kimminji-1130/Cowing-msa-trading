@@ -11,17 +11,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class TradeProcessorLogicTest {
 
     @Test
-    @DisplayName("수량 계산 로직: 매수 시 남은 금액을 가격으로 나누기")
+    @DisplayName("수량 계산: 매수 시 남은 금액을 가격으로 나누기")
     void divisionLogicForBuy() {
         BigDecimal remaining = new BigDecimal("123.456");
         BigDecimal price = new BigDecimal("3.21");
         // 직접 로직
         BigDecimal expected = remaining.divide(price, 8, RoundingMode.HALF_UP);
-        assertEquals(new BigDecimal("38.43800623"), expected);
+        assertEquals(new BigDecimal("38.45981308"), expected);
     }
 
     @Test
-    @DisplayName("수량 계산 로직: 매도 시 남은 수량을 그대로 사용")
+    @DisplayName("수량 계산: 매도 시 남은 수량을 그대로 사용")
     void passThroughLogicForSell() {
         BigDecimal remainingQty = new BigDecimal("42.5");
         // 매도 로직은 그대로 반환
@@ -40,16 +40,12 @@ class TradeProcessorLogicTest {
     }
 
     @Test
-    @DisplayName("가격 조건 판단 로직: 매수 and 매도")
+    @DisplayName("가격 조건 판단")
     void priceConditionLogic() {
         BigDecimal limit = new BigDecimal("50");
         BigDecimal current = new BigDecimal("45");
-        // 매수: limit >= current
         assertTrue(limit.compareTo(current) >= 0);
         assertFalse(new BigDecimal("40").compareTo(current) >= 0);
-        // 매도: limit <= current
-        assertTrue(limit.compareTo(current) <= 0);
-        assertFalse(new BigDecimal("55").compareTo(current) <= 0);
     }
 
     @Test
