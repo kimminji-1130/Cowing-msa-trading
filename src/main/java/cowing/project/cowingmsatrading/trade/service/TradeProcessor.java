@@ -83,7 +83,7 @@ public class TradeProcessor {
 
                 if (isRemainingZero(remaining)) {
                     break;
-                } else if (remaining.compareTo(BigDecimal.ZERO) < 0) {
+                } else if (remaining.compareTo(BigDecimal.ZERO) < 0 || remaining.abs().compareTo(BigDecimal.ZERO) == 0 || remaining.scale() == 3 ||  remaining.scale() > 3) {
                     remaining = BigDecimal.ZERO; // 잔여 금액 또는 수량이 음수로 떨어지면 합리적 허위 범위 내이므로 0으로 설정
                     break;
                 }

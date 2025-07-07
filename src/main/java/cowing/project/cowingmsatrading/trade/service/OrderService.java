@@ -52,7 +52,8 @@ public class OrderService {
                                                 .divide(portfolio.getQuantity(), 8, RoundingMode.HALF_UP)
                                                 .longValue()
                                 ); //BigDecimal을 기준으로 평단가 계산
-                            } else {
+                            }
+                            if( order.getOrderPosition() == OrderPosition.SELL ) {
                                 // 매도일 경우
                                 portfolio.setQuantity(portfolio.getQuantity().subtract(totalQuantity));
                                 portfolio.setTotalCost(portfolio.getTotalCost() - totalPrice.longValue());
@@ -72,7 +73,7 @@ public class OrderService {
                                         .marketCode(order.getMarketCode())
                                         .quantity(totalQuantity)
                                         .totalCost(totalPrice.longValue())
-                                        .averageCost(totalPrice.longValue() / totalQuantity.longValue())
+                                        .averageCost(totalPrice.divide(totalQuantity, 8, RoundingMode.HALF_UP).longValue())
                                         .build()
                         )
                 );
