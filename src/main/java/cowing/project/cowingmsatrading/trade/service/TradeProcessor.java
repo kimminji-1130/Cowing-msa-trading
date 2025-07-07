@@ -6,12 +6,14 @@ import cowing.project.cowingmsatrading.trade.domain.entity.order.Order;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.OrderPosition;
 import cowing.project.cowingmsatrading.trade.dto.OrderDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TradeProcessor {
@@ -22,6 +24,7 @@ public class TradeProcessor {
     // 타입과 포지션에 따라 매매 요청을 처리하는 메서드
     public void startTradeExecution(OrderDto orderDto, String username) {
 
+        log.info("매매 체결을 시작합니다. 주문 정보: {}", orderDto);
         //매매 요청을 받아온다.
         Order orderForExecution = orderDto.toOrder(username);
 
@@ -160,7 +163,7 @@ public class TradeProcessor {
 
                 if (isRemainingZero(remainingQuantity)) {
                     break;
-                } else if (remainingQuantity.compareTo(BigDecimal.ZERO) < 0) {
+                } else if (remainingQuantity.compareTo(BigDecimal.ZERO) < 0 || remainingQuantity.abs().compareTo(BigDecimal.ZERO) == 0 || remainingQuantity.scale() == 3 ||  remainingQuantity.scale() > 3) {
                     remainingQuantity = BigDecimal.ZERO; // 잔여 금액 또는 수량이 음수로 떨어지면 합리적 허위 범위 내이므로 0으로 설정
                     break;
                 }
