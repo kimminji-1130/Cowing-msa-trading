@@ -24,7 +24,6 @@ public class TradeProcessor {
     // 타입과 포지션에 따라 매매 요청을 처리하는 메서드
     public void startTradeExecution(OrderDto orderDto, String username) {
 
-        log.info("매매 체결을 시작합니다. 주문 정보: {}", orderDto);
         //매매 요청을 받아온다.
         Order orderForExecution = orderDto.toOrder(username);
 
@@ -181,9 +180,11 @@ public class TradeProcessor {
     }
 
     private static boolean isPriceConditionMet(boolean isBuyOrder, BigDecimal limitPrice, BigDecimal currentPrice) {
-        return isBuyOrder ?
-                limitPrice.compareTo(currentPrice) >= 0 : // 매수: 지정가 >= 매도호가
-                limitPrice.compareTo(currentPrice) <= 0; // 매도: 지정가 <= 매수호가
+        if (isBuyOrder) {
+            return limitPrice.compareTo(currentPrice) >= 0; // 매수: 지정가 >= 매도호가
+        } else {
+            return limitPrice.compareTo(currentPrice) <= 0; // 매도: 지정가 <= 매수호가
+        }
     }
 
 

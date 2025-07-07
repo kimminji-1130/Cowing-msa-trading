@@ -40,7 +40,7 @@ public class OrderQueue {
      * 큐에 주문 태스크를 추가한다.
      */
     public void enqueue(OrderTask task) {
-        queue.offer(task);
+        queue.add(task);
     }
 
     // 큐에서 하나씩 꺼내 처리한다.
@@ -49,7 +49,7 @@ public class OrderQueue {
             while (!Thread.currentThread().isInterrupted()) {
                 OrderTask task = queue.take();
                 tradeProcessorWrapper.process(task);
-                log.info("{} 를 시작합니다.", task.toString());
+                log.info("{} 를 시작합니다.", task);
             }
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
