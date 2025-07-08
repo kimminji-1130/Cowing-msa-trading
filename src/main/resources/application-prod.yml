@@ -12,7 +12,11 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.mariadb.jdbc.Driver
     hikari:
-      maximum-pool-size: 100
+      maximum-pool-size: 80
+      minimum-idle: 20
+      idle-timeout: 30000
+      connection-timeout: 180000
+      connection-test-query: SELECT 1
 
   jpa:
     hibernate:
