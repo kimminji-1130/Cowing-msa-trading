@@ -3,12 +3,14 @@ package cowing.project.cowingmsatrading.trade.domain.entity.order;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
 @AllArgsConstructor
 @NoArgsConstructor
 public class Trade {
@@ -19,6 +21,9 @@ public class Trade {
 
     @Column(nullable = false, name = "order_uuid")
     private String orderUuid;
+
+    @Column(nullable = false)
+    private String username;
 
     private String marketCode;
 
@@ -43,8 +48,9 @@ public class Trade {
     }
 
     @Builder
-    public Trade(String orderUuid, String marketCode, OrderType orderType, OrderPosition orderPosition, Long tradePrice, BigDecimal tradeQuantity) {
+    public Trade(String orderUuid, String username, String marketCode, OrderType orderType, OrderPosition orderPosition, Long tradePrice, BigDecimal tradeQuantity) {
         this.orderUuid = orderUuid;
+        this.username = username;
         this.marketCode = marketCode;
         this.orderType = orderType;
         this.orderPosition = orderPosition;
@@ -52,3 +58,4 @@ public class Trade {
         this.tradeQuantity = tradeQuantity;
     }
 }
+

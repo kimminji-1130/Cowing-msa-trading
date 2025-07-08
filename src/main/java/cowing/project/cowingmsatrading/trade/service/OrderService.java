@@ -1,5 +1,6 @@
 package cowing.project.cowingmsatrading.trade.service;
 
+import cowing.project.cowingmsatrading.config.TokenProvider;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Order;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.OrderPosition;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Status;
@@ -24,6 +25,7 @@ public class OrderService {
     private final PortfolioRepository portfolioRepository;
     private final TradeRepository tradeRepository;
     private final UserRepository userRepository;
+    private final TokenProvider tokenProvider;
 
 
     @Transactional
@@ -85,6 +87,7 @@ public class OrderService {
                 Trade.builder()
                         .orderUuid(order.getUuid())
                         .marketCode(order.getMarketCode())
+                        .username(order.getUsername())
                         .orderType(order.getOrderType())
                         .orderPosition(order.getOrderPosition())
                         .tradePrice(currentTradePrice.longValue())
@@ -100,5 +103,9 @@ public class OrderService {
             user.updateHoldings(totalPrice);
             userRepository.save(user);
         });
+    }
+
+    public String extractUsernameFromToken(String token) {
+        return tokenProvider.getUsername(token.replace("Bearer ", ""));
     }
 }
