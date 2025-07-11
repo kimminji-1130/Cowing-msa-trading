@@ -7,7 +7,6 @@ import cowing.project.cowingmsatrading.trade.dto.MarketSellOrderDto;
 import cowing.project.cowingmsatrading.trade.queue.OrderQueue;
 import cowing.project.cowingmsatrading.trade.queue.OrderTask;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
