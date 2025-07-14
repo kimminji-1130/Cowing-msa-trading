@@ -1,4 +1,4 @@
-package cowing.project.cowingmsatrading.config;
+package cowing.project.cowingmsatrading.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -10,7 +10,7 @@ import cowing.project.cowingmsatrading.trade.dto.TradeHistoryResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import javax.naming.AuthenticationException;
 import java.util.List;
 
 @Service
@@ -22,17 +22,31 @@ public class HistoryService {
     private final OrderRepository orderRepository;
 
     public List<TradeHistoryResponse> getTradeHistories(String username) {
-        List<Trade> trades = tradeRepository.findAllByUsername(username);
-        return trades.stream()
-                .map(TradeHistoryResponse::of)
-                .toList();
+        try {
+            validateUsername(username);
+            List<Trade> trades = tradeRepository.findAllByUsername(username).get();
+            return trades.stream()
+                    .map(TradeHistoryResponse::of)
+                    .toList();
+        } catch (AuthenticationException e) {
+            throw new RuntimeException("사용자 아이디는 공백이거나 null일 수 없습니다.", e);
+        }
     }
 
     public List<PendingOrderResponse> getPendingOrders(String username) {
-        List<Order> orders = orderRepository.findAllByUsernameAndStatus(username, Status.PENDING);
-        return orders.stream()
-                .map(PendingOrderResponse::of)
-                .toList();
+        try {
+            validateUsername(username);
+            List<Order> orders = orderRepository.findAllByUsernameAndStatus(username, Status.PENDING);
+            return orders.stream()
+                    .map(PendingOrderResponse::of)
+                    .toList();
+        } catch (AuthenticationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void validateUsername(String username) throws AuthenticationException {
+        if (username == null || username.isBlank()) throw new AuthenticationException("사용자 아이디는 공백이거나 null일 수 없습니다.");
     }
 }
 
