@@ -1,4 +1,4 @@
-package cowing.project.cowingmsatrading.config;
+package cowing.project.cowingmsatrading.global.config;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
