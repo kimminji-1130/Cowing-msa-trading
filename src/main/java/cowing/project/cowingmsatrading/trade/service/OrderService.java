@@ -1,6 +1,6 @@
 package cowing.project.cowingmsatrading.trade.service;
 
-import cowing.project.cowingmsatrading.config.TokenProvider;
+import cowing.project.cowingmsatrading.global.config.TokenProvider;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Order;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.OrderPosition;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Status;
@@ -13,9 +13,11 @@ import cowing.project.cowingmsatrading.trade.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,83 +28,84 @@ public class OrderService {
     private final TradeRepository tradeRepository;
     private final UserRepository userRepository;
     private final TokenProvider tokenProvider;
-
+    private final TransactionTemplate transactionTemplate;
 
     @Transactional
     public void insertToOrderHistory(Order order) {
         orderRepository.save(order);
     }
 
-    @Transactional
-    public void modifyOrderStatus(Order order) {
-        order.setStatus(Status.COMPLETED);
-        orderRepository.save(order);
-    }
+    protected void processTradeRecordsAndSettlement(Order order, List<Trade> tradeRecords, BigDecimal totalQuantity, BigDecimal totalPrice) {
+        transactionTemplate.execute(status -> {
+            // 체결 내역 저장
+            tradeRepository.saveAll(tradeRecords);
 
-    @Transactional
-    public void updatePortfolio(Order order, BigDecimal totalQuantity, BigDecimal totalPrice) {
-        // 포트폴리오를 조회해서 없다면 새로이 생성하고, 있다면 다음 코드부터 총체적인 계산을 실행한다.
-        portfolioRepository.findByUsernameAndMarketCode(order.getUsername(), order.getMarketCode())
-                .ifPresentOrElse(
-                        portfolio -> {
-                            // 포트폴리오가 존재할 경우, 해당 포트폴리오를 업데이트한다.
-                            if (order.getOrderPosition() == OrderPosition.BUY) {
-                                portfolio.setQuantity(portfolio.getQuantity().add(totalQuantity));
-                                portfolio.setTotalCost(portfolio.getTotalCost() + totalPrice.longValue());
-                                portfolio.setAverageCost(
-                                        BigDecimal.valueOf(portfolio.getTotalCost())
-                                                .divide(portfolio.getQuantity(), 8, RoundingMode.HALF_UP)
-                                                .longValue()
-                                ); //BigDecimal을 기준으로 평단가 계산
-                            }
-                            if( order.getOrderPosition() == OrderPosition.SELL ) {
-                                // 매도일 경우
-                                portfolio.setQuantity(portfolio.getQuantity().subtract(totalQuantity));
-                                portfolio.setTotalCost(portfolio.getTotalCost() - totalPrice.longValue());
-
-                                // 만약 매도 후 수량이 0 이하가 되면 해당 포트폴리오를 삭제한다.
-                                if (portfolio.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
-                                    portfolioRepository.delete(portfolio);
-                                    return;
+            // 포트폴리오 업데이트
+            portfolioRepository.findByUsernameAndMarketCode(order.getUsername(), order.getMarketCode())
+                    .ifPresentOrElse(
+                            portfolio -> {
+                                // 포트폴리오가 존재할 경우, 해당 포트폴리오를 업데이트한다.
+                                if (order.getOrderPosition() == OrderPosition.BUY) {
+                                    portfolio.setQuantity(portfolio.getQuantity().add(totalQuantity));
+                                    portfolio.setTotalCost(portfolio.getTotalCost() + totalPrice.longValue());
+                                    portfolio.setAverageCost(
+                                            BigDecimal.valueOf(portfolio.getTotalCost())
+                                                    .divide(portfolio.getQuantity(), 8, RoundingMode.HALF_UP)
+                                                    .longValue()
+                                    ); //BigDecimal을 기준으로 평단가 계산
                                 }
-                            }
-                            portfolioRepository.save(portfolio);
-                        },
-                        () ->
-                        portfolioRepository.save(
-                                Portfolio.builder()
-                                        .username(order.getUsername())
-                                        .marketCode(order.getMarketCode())
-                                        .quantity(totalQuantity)
-                                        .totalCost(totalPrice.longValue())
-                                        .averageCost(totalPrice.divide(totalQuantity, 8, RoundingMode.HALF_UP).longValue())
-                                        .build()
-                        )
-                );
-    }
+                                if( order.getOrderPosition() == OrderPosition.SELL ) {
+                                    // 매도일 경우
+                                    portfolio.setQuantity(portfolio.getQuantity().subtract(totalQuantity));
+                                    portfolio.setTotalCost(portfolio.getTotalCost() - totalPrice.longValue());
 
-    @Transactional
-    public void saveTradeHistory(Order order, BigDecimal currentTradeQuantity, BigDecimal currentTradePrice) {
-        tradeRepository.save(
-                Trade.builder()
-                        .orderUuid(order.getUuid())
-                        .marketCode(order.getMarketCode())
-                        .username(order.getUsername())
-                        .orderType(order.getOrderType())
-                        .orderPosition(order.getOrderPosition())
-                        .tradePrice(currentTradePrice.longValue())
-                        .tradeQuantity(currentTradeQuantity)
-                        .build()
-        );
-    }
+                                    // 만약 매도 후 수량이 0 이하가 되면 해당 포트폴리오를 삭제한다.
+                                    if (portfolio.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                                        portfolioRepository.delete(portfolio);
+                                        return;
+                                    }
+                                }
+                                portfolioRepository.save(portfolio);
+                            },
+                            () ->
+                                    portfolioRepository.save(
+                                            Portfolio.builder()
+                                                    .username(order.getUsername())
+                                                    .marketCode(order.getMarketCode())
+                                                    .quantity(totalQuantity)
+                                                    .totalCost(totalPrice.longValue())
+                                                    .averageCost(totalPrice.divide(totalQuantity, 8, RoundingMode.HALF_UP).longValue())
+                                                    .build()
+                                    )
+                    );
 
-    @Transactional
-    public void updateUserAssets(String username, Long totalPrice) {
-        // 예시로, 사용자의 자산을 조회하고, 총 금액을 차감하는 방식으로 구현
-        userRepository.findByUsername(username).ifPresent(user -> {
-            user.updateHoldings(totalPrice);
-            userRepository.save(user);
+            // 주문 상태를 완료로 변경
+            order.setStatus(Status.COMPLETED);
+            orderRepository.save(order);
+
+            // 자산 업데이트
+            userRepository.findByUsername(order.getUsername()).ifPresent(user -> {
+                user.updateHoldings(totalPrice.longValue());
+                userRepository.save(user);
+            });
+
+            return null;
         });
+
+    }
+
+    @Transactional(readOnly = true)
+    public boolean checkUserAssets(String username, Long totalPrice) {
+        return userRepository.findByUsername(username)
+                .map(user -> user.getUHoldings() >= totalPrice)
+                .orElse(false);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean checkPortfolio(String username, String marketCode, BigDecimal totalQuantity) {
+        return portfolioRepository.findByUsernameAndMarketCode(username, marketCode)
+                .map(portfolio -> portfolio.getQuantity().compareTo(totalQuantity) >= 0)
+                .orElse(false);
     }
 
     public String extractUsernameFromToken(String token) {
