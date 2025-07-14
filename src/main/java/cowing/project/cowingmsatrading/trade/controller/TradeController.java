@@ -1,6 +1,6 @@
 package cowing.project.cowingmsatrading.trade.controller;
 
-import cowing.project.cowingmsatrading.config.TokenProvider;
+import cowing.project.cowingmsatrading.global.config.TokenProvider;
 import cowing.project.cowingmsatrading.trade.dto.LimitOrderDto;
 import cowing.project.cowingmsatrading.trade.dto.MarketBuyOrderDto;
 import cowing.project.cowingmsatrading.trade.dto.MarketSellOrderDto;
