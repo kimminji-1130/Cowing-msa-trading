@@ -4,6 +4,7 @@ import cowing.project.cowingmsatrading.orderbook.RealTimeOrderbook;
 import cowing.project.cowingmsatrading.orderbook.vo.OrderbookUnitVo;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Order;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.OrderPosition;
+import cowing.project.cowingmsatrading.trade.domain.entity.order.Trade;
 import cowing.project.cowingmsatrading.trade.dto.OrderDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -27,158 +29,159 @@ public class TradeProcessor {
         //매매 요청을 받아온다.
         Order orderForExecution = orderDto.toOrder(username);
 
+        // 주문이 유효한지 확인한다. 매수 주문일 때, 사용자의 보유 금액이 충분한지 확인하고, 매도 주문일 때, 사용자의 보유 수량이 충분한지 확인한다.
+        validateCurrentOrder(orderForExecution);
+
         // 주문을 처리하기 전에 주문 기록에 저장한다.
         orderService.insertToOrderHistory(orderForExecution);
 
         //요청 타입에 따라 각 메서드로 분기한다.
         switch (orderForExecution.getOrderType()) {
-            case MARKET:
-                executeMarketOrder(orderForExecution);
-                break;
-            case LIMIT:
-                executeLimitOrder(orderForExecution);
-                break;
+            case MARKET -> executeMarketOrder(orderForExecution);
+            case LIMIT -> executeLimitOrder(orderForExecution);
         }
     }
 
-    /**
-     * 시장가 매매 주문 처리
-     * @param order 주문 상세 정보
-     */
+    private void validateCurrentOrder(Order orderForExecution) {
+        if (!orderService.checkUserAssets(orderForExecution.getUsername(), orderForExecution.getTotalPrice())) {
+            log.error("사용자의 자산이 부족합니다. 주문을 처리할 수 없습니다.");
+            throw new IllegalStateException("사용자의 자산이 부족합니다.");
+        } else if (!orderService.checkPortfolio(orderForExecution.getUsername(), orderForExecution.getMarketCode(), orderForExecution.getTotalQuantity())) {
+            log.error("사용자의 포트폴리오에 충분한 수량이 없습니다. 주문을 처리할 수 없습니다.");
+            throw new IllegalStateException("사용자의 포트폴리오에 충분한 수량이 없습니다.");
+        }
+    }
+
+    // 시장가 매매 주문 처리
     private void executeMarketOrder(Order order) {
-
-        boolean isBuyOrder = order.getOrderPosition() == OrderPosition.BUY;
-
+        boolean isBuyOrder = confirmBuyOrder(order);
         BigDecimal remaining = initializeRemaining(isBuyOrder, order.getTotalPrice(), order.getTotalQuantity());
 
-        // 총 체결 수량과 액
+        TradeExecutionResult result = executeTradeWithCondition(order, remaining, isBuyOrder, null);
+
+        orderService.processTradeRecordsAndSettlement(order, result.tradeRecords(), result.totalQuantity(), result.totalPrice());
+    }
+
+     // 지정가 매매 주문 처리
+    private void executeLimitOrder(Order order) {
+        boolean isBuyOrder = confirmBuyOrder(order);
+        BigDecimal limitPrice = BigDecimal.valueOf(order.getOrderPrice());
+        BigDecimal remainingQuantity = order.getTotalQuantity();
+
+        TradeExecutionResult result = executeTradeWithCondition(order, remainingQuantity, isBuyOrder, limitPrice);
+
+        orderService.processTradeRecordsAndSettlement(order, result.tradeRecords(), result.totalQuantity(), result.totalPrice());
+    }
+
+    // 조건에 따른 거래 실행 공통 로직
+    private TradeExecutionResult executeTradeWithCondition(Order order, BigDecimal remaining, boolean isBuyOrder, BigDecimal limitPrice) {
         BigDecimal totalQuantity = BigDecimal.ZERO;
         BigDecimal totalPrice = BigDecimal.ZERO;
-
-        // 현재 체결 수량과 금액
-        BigDecimal tradeQuantity;
-        BigDecimal tradePrice;
-
-        // 매도 호가를 조회한다.
-        List<OrderbookUnitVo> orderbook;
+        List<Trade> tradeRecords = new ArrayList<>();
+        int attemptCount = 0;
+        final int MAX_ATTEMPTS = 10;
 
         do {
-            orderbook = getOrderbook(order.getOrderPosition(), order.getMarketCode());
+            if (limitPrice != null && ++attemptCount >= MAX_ATTEMPTS) {
+                log.warn("지정가 주문이 " + MAX_ATTEMPTS + "번의 호가 조회 시도 후에도 체결되지 않았습니다.");
+                throw new IllegalStateException();
+            }
+
+            List<OrderbookUnitVo> orderbook = getOrderbook(order.getOrderPosition(), order.getMarketCode());
 
             for (OrderbookUnitVo unit : orderbook) {
-
                 BigDecimal currentPrice = BigDecimal.valueOf(unit.price());
                 BigDecimal currentSize = BigDecimal.valueOf(unit.size());
 
-                BigDecimal quantityForTrade = getQuantityForTradeFromIsBuyOrder(isBuyOrder, remaining, currentPrice);
-
-                tradeQuantity = calculateTradeQuantity(isBuyOrder, quantityForTrade, remaining, currentSize);
-                tradePrice = tradeQuantity.multiply(currentPrice);
-
-                remaining = remaining.subtract(tradePrice);
-
-                // 체결확정으로 처리하여 내역을 기록한다.
-                orderService.saveTradeHistory(order, tradeQuantity, tradePrice);
-
-                totalQuantity = totalQuantity.add(tradeQuantity);
-                totalPrice = totalPrice.add(tradePrice);
-
-                if (isRemainingZero(remaining)) {
+                // 지정가 조건 확인 (지정가 주문인 경우에만)
+                if (limitPrice != null && !isPriceConditionMet(isBuyOrder, limitPrice, currentPrice)) {
                     break;
-                } else if (remaining.compareTo(BigDecimal.ZERO) < 0 || remaining.abs().compareTo(BigDecimal.ZERO) == 0 || remaining.scale() == 3 ||  remaining.scale() > 3) {
-                    remaining = BigDecimal.ZERO; // 잔여 금액 또는 수량이 음수로 떨어지면 합리적 허위 범위 내이므로 0으로 설정
+                }
+
+                TradeCalculationResult calcResult = calculateTradeAmount(remaining, currentPrice, currentSize, isBuyOrder, limitPrice != null);
+
+                if (calcResult.tradeQuantity().compareTo(BigDecimal.ZERO) == 0) {
+                    break;
+                }
+
+                remaining = calcResult.remainingAfterTrade();
+
+                // 체결 기록 생성
+                tradeRecords.add(createTradeRecord(order, calcResult.tradeQuantity(), calcResult.tradePrice()));
+
+                totalQuantity = totalQuantity.add(calcResult.tradeQuantity());
+                totalPrice = totalPrice.add(calcResult.tradePrice());
+
+                if (checkConstraints(remaining)) {
+                    remaining = BigDecimal.ZERO;
                     break;
                 }
             }
         } while (!isRemainingZero(remaining));
 
-        // 거래 완료 후 포트폴리오 업데이트
-        orderService.updatePortfolio(order, totalQuantity, totalPrice);
-
-        // 주문 상태를 완료로 변경
-        orderService.modifyOrderStatus(order);
-
-        // 자산 업데이트
-        orderService.updateUserAssets(order.getUsername(), totalPrice.longValue());
+        return new TradeExecutionResult(tradeRecords, totalQuantity, totalPrice);
     }
 
-    private static BigDecimal getQuantityForTradeFromIsBuyOrder(boolean isBuy, BigDecimal remaining, BigDecimal currentPrice) {
+     // 거래 수량과 금액 계산
+    private TradeCalculationResult calculateTradeAmount(BigDecimal remaining, BigDecimal currentPrice, BigDecimal currentSize, boolean isBuyOrder, boolean isLimitOrder) {
+        BigDecimal tradeQuantity;
+        BigDecimal tradePrice;
+        BigDecimal remainingAfterTrade;
+
+        if (isLimitOrder) {
+            // 지정가 주문: 남은 수량과 호가 수량 중 작은 값
+            tradeQuantity = remaining.min(currentSize);
+            tradePrice = tradeQuantity.multiply(currentPrice).setScale(0, RoundingMode.HALF_UP);
+            remainingAfterTrade = remaining.subtract(tradeQuantity);
+        } else {
+            // 시장가 주문
+            BigDecimal quantityForTrade = getQuantityForTradeFromIsBuyOrder(isBuyOrder, remaining, currentPrice);
+            tradeQuantity = calculateTradeQuantity(isBuyOrder, quantityForTrade, remaining, currentSize);
+            tradePrice = tradeQuantity.multiply(currentPrice).setScale(0, RoundingMode.HALF_UP);
+
+            remainingAfterTrade = isBuyOrder
+                    ? remaining.subtract(tradePrice).setScale(0, RoundingMode.HALF_UP)
+                    : remaining.subtract(tradeQuantity).setScale(2, RoundingMode.HALF_UP);
+        }
+
+        return new TradeCalculationResult(tradeQuantity, tradePrice, remainingAfterTrade);
+    }
+
+    // 거래 기록 생성
+    private Trade createTradeRecord(Order order, BigDecimal tradeQuantity, BigDecimal tradePrice) {
+        return Trade.builder()
+                .orderUuid(order.getUuid())
+                .marketCode(order.getMarketCode())
+                .username(order.getUsername())
+                .orderType(order.getOrderType())
+                .orderPosition(order.getOrderPosition())
+                .tradePrice(tradePrice.longValue())
+                .tradeQuantity(tradeQuantity)
+                .build();
+    }
+
+    // 제약 조건 확인
+    private static boolean checkConstraints(BigDecimal remaining) {
+        return remaining.compareTo(BigDecimal.ZERO) < 0 || remaining.compareTo(BigDecimal.ZERO) == 0 || remaining.scale() == 3 || remaining.scale() > 3;
+    }
+
+    // 매수/매도 주문에 따라 남은 금액 또는 수량 초기화
+    private BigDecimal initializeRemaining(boolean isBuyOrder, Long totalPrice, BigDecimal totalQuantity) {
+        return isBuyOrder
+                ? BigDecimal.valueOf(totalPrice)
+                : totalQuantity;
+    }
+
+    private boolean confirmBuyOrder(Order order) {
+        return order.getOrderPosition() == OrderPosition.BUY;
+    }
+
+    // 매수/매도 주문에 따라 체결 수량 결정
+    private BigDecimal getQuantityForTradeFromIsBuyOrder(boolean isBuy, BigDecimal remaining, BigDecimal currentPrice) {
         return isBuy ? remaining.divide(currentPrice, 8, RoundingMode.HALF_UP) : remaining;
     }
 
-    /**
-     * 지정가 매매 주문 처리
-     * @param order 주문 상세 정보
-     */
-    private void executeLimitOrder(Order order) {
-        // 지정가
-        BigDecimal limitPrice = BigDecimal.valueOf(order.getOrderPrice());
-
-        // 남은 주문 수량
-        BigDecimal remainingQuantity = order.getTotalQuantity();
-
-        // 현재 체결 수량과 금액
-        BigDecimal tradeQuantity;
-        BigDecimal tradePrice;
-
-        // 총 체결 수량과 금액
-        BigDecimal totalQuantity = BigDecimal.ZERO;
-        BigDecimal totalPrice = BigDecimal.ZERO;
-
-        // 매수인지 매도인지 여부
-        boolean isBuyOrder = order.getOrderPosition() == OrderPosition.BUY;
-
-        List<OrderbookUnitVo> orderbook;
-
-        // 체결 가능 확인 시 진행
-        do {
-            orderbook = getOrderbook(order.getOrderPosition(), order.getMarketCode());
-
-            for (OrderbookUnitVo unit : orderbook) {
-
-                // 지정가 제약 조건 확인
-                if (!isPriceConditionMet(isBuyOrder, limitPrice, BigDecimal.valueOf(orderbook.getFirst().price()))) {
-                    break; // 가격 조건을 만족하지 않으면 더 이상 체결할 수 없음
-                }
-
-                BigDecimal currentPrice = BigDecimal.valueOf(unit.price());
-                BigDecimal currentSize = BigDecimal.valueOf(unit.size());
-
-                // 체결 수량 계산
-                tradeQuantity = remainingQuantity.min(currentSize);
-
-                // 체결 금액 계산
-                tradePrice = tradeQuantity.multiply(currentPrice);
-
-                // 남은 수량 업데이트
-                remainingQuantity = remainingQuantity.subtract(tradeQuantity);
-
-                // 체결 확정으로 처리하여 내역 기록
-                orderService.saveTradeHistory(order, tradeQuantity, tradePrice);
-
-                // 총 체결 수량과 금액 업데이트
-                totalQuantity = totalQuantity.add(tradeQuantity);
-                totalPrice = totalPrice.add(tradePrice);
-
-                if (isRemainingZero(remainingQuantity)) {
-                    break;
-                } else if (remainingQuantity.compareTo(BigDecimal.ZERO) < 0 || remainingQuantity.abs().compareTo(BigDecimal.ZERO) == 0 || remainingQuantity.scale() == 3 ||  remainingQuantity.scale() > 3) {
-                    remainingQuantity = BigDecimal.ZERO; // 잔여 금액 또는 수량이 음수로 떨어지면 합리적 허위 범위 내이므로 0으로 설정
-                    break;
-                }
-            }
-        } while (!isRemainingZero(remainingQuantity));
-
-        // 거래 완료 후 포트폴리오 업데이트
-        orderService.updatePortfolio(order, totalQuantity, totalPrice);
-
-        // 주문 상태를 완료로 변경
-        orderService.modifyOrderStatus(order);
-
-        // 자산 업데이트
-        orderService.updateUserAssets(order.getUsername(), totalPrice.longValue());
-    }
-
+    // 지정가 주문의 가격 조건 확인
     private static boolean isPriceConditionMet(boolean isBuyOrder, BigDecimal limitPrice, BigDecimal currentPrice) {
         if (isBuyOrder) {
             return limitPrice.compareTo(currentPrice) >= 0; // 매수: 지정가 >= 매도호가
@@ -186,7 +189,6 @@ public class TradeProcessor {
             return limitPrice.compareTo(currentPrice) <= 0; // 매도: 지정가 <= 매수호가
         }
     }
-
 
     // 체결 수량을 결정하는 로직을 담당하는 메서드
     private BigDecimal calculateTradeQuantity(boolean isBuy, BigDecimal quantityForTrade, BigDecimal remaining, BigDecimal currentSize) {
@@ -199,23 +201,22 @@ public class TradeProcessor {
         }
     }
 
-    private static BigDecimal initializeRemaining(boolean isBuyOrder, Long totalPrice, BigDecimal totalQuantity) {
-        return isBuyOrder
-                ? BigDecimal.valueOf(totalPrice)
-                : totalQuantity;
-    }
-
+    // 주문 포지션에 따라 호가 정보 조회
     private List<OrderbookUnitVo> getOrderbook(OrderPosition orderPosition, String marketCode) {
         return orderPosition == OrderPosition.BUY
                 ? orderbookProvider.getAskOrderbook(marketCode)
                 : orderbookProvider.getBidOrderbook(marketCode);
     }
 
-    private static boolean isRemainingZero(BigDecimal remaining) {
+    private boolean isRemainingZero(BigDecimal remaining) {
         return remaining.compareTo(BigDecimal.ZERO) == 0;
     }
 
+    // 거래 계산 결과를 담는 레코드
+    public record TradeCalculationResult(BigDecimal tradeQuantity, BigDecimal tradePrice, BigDecimal remainingAfterTrade) {
+    }
 
-
-
+    // 거래 실행 결과
+    public record TradeExecutionResult(List<Trade> tradeRecords, BigDecimal totalQuantity, BigDecimal totalPrice) {
+    }
 }
