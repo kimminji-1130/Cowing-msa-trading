@@ -14,4 +14,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(e.getMessage());
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleIllegalStateException(final IllegalStateException e) {
+        return ResponseEntity.badRequest().body(e.getMessage()+": 자산 또는 주식이 존재하지 않습니다.");
+    }
+
 }
