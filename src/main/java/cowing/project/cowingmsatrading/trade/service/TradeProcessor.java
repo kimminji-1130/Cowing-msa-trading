@@ -43,12 +43,19 @@ public class TradeProcessor {
     }
 
     private void validateCurrentOrder(Order orderForExecution) {
-        if (!orderService.checkUserAssets(orderForExecution.getUsername(), orderForExecution.getTotalPrice())) {
-            log.error("사용자의 자산이 부족합니다. 주문을 처리할 수 없습니다.");
-            throw new IllegalStateException("사용자의 자산이 부족합니다.");
-        } else if (!orderService.checkPortfolio(orderForExecution.getUsername(), orderForExecution.getMarketCode(), orderForExecution.getTotalQuantity())) {
-            log.error("사용자의 포트폴리오에 충분한 수량이 없습니다. 주문을 처리할 수 없습니다.");
-            throw new IllegalStateException("사용자의 포트폴리오에 충분한 수량이 없습니다.");
+        switch (orderForExecution.getOrderPosition()) {
+            case BUY -> {
+                if (!orderService.checkUserAssets(orderForExecution.getUsername(), orderForExecution.getTotalPrice())) {
+                    log.error("사용자의 자산이 부족합니다. 주문을 처리할 수 없습니다.");
+                    throw new IllegalStateException("사용자의 자산이 부족합니다.");
+                }
+            }
+            case SELL -> {
+                if (!orderService.checkPortfolio(orderForExecution.getUsername(), orderForExecution.getMarketCode(), orderForExecution.getTotalQuantity())) {
+                    log.error("사용자의 포트폴리오에 충분한 수량이 없습니다. 주문을 처리할 수 없습니다.");
+                    throw new IllegalStateException("사용자의 포트폴리오에 충분한 수량이 없습니다.");
+                }
+            }
         }
     }
 
