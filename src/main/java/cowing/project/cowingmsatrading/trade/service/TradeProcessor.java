@@ -5,7 +5,6 @@ import cowing.project.cowingmsatrading.orderbook.vo.OrderbookUnitVo;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Order;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.OrderPosition;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Trade;
-import cowing.project.cowingmsatrading.trade.dto.OrderDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,10 +23,7 @@ public class TradeProcessor {
     private final RealTimeOrderbook orderbookProvider;
 
     // 타입과 포지션에 따라 매매 요청을 처리하는 메서드
-    public void startTradeExecution(OrderDto orderDto, String username) {
-
-        //매매 요청을 받아온다.
-        Order orderForExecution = orderService.findOrderByUsername(username);
+    public void startTradeExecution(Order orderForExecution, String username) {
 
         // 주문이 유효한지 확인한다. 매수 주문일 때, 사용자의 보유 금액이 충분한지 확인하고, 매도 주문일 때, 사용자의 보유 수량이 충분한지 확인한다.
         validateCurrentOrder(orderForExecution);

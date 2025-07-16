@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Schema(description = "지정가 주문 요청 DTO")
 public record LimitOrderDto(
@@ -39,6 +40,7 @@ public record LimitOrderDto(
     @Override
     public Order toOrder(String username) {
         return Order.builder()
+                .uuid(UUID.randomUUID().toString())
                 .marketCode(marketCode)
                 .orderType(OrderType.LIMIT)
                 .orderPosition(OrderPosition.valueOf(position.toUpperCase()))

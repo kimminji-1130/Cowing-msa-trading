@@ -1,6 +1,6 @@
 package cowing.project.cowingmsatrading.trade.queue;
 
-import cowing.project.cowingmsatrading.trade.dto.OrderDto;
+import cowing.project.cowingmsatrading.trade.domain.entity.order.Order;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -10,6 +10,6 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public class OrderTask {
-    private final OrderDto orderDto;
+    private final Order order;
     private final String username;
 }

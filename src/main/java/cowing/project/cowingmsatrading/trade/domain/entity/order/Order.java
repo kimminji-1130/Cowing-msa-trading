@@ -2,9 +2,9 @@ package cowing.project.cowingmsatrading.trade.domain.entity.order;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Getter
@@ -54,8 +54,4 @@ public class Order {
     @Column(nullable = false)
     private Status status;
 
-    @PrePersist
-    public void prePersist() {
-        this.uuid = this.uuid == null ? UUID.randomUUID().toString() : this.uuid;
-    }
 }

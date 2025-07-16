@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Schema(description = "시장가 매수 주문 요청 DTO")
 public record MarketBuyOrderDto(
@@ -36,6 +37,7 @@ public record MarketBuyOrderDto(
     @Override
     public Order toOrder(String username) {
         return Order.builder()
+                .uuid(UUID.randomUUID().toString())
                 .marketCode(marketCode)
                 .orderType(OrderType.MARKET)
                 .orderPosition(OrderPosition.BUY)

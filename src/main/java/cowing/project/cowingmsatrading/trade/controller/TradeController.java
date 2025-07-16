@@ -28,7 +28,8 @@ public class TradeController {
     @ApiResponse(responseCode = "200", description = "주문이 접수되었습니다.")
     @PostMapping("/api/v1/orders/market/buy")
     public ResponseEntity<String> buy(@RequestBody MarketBuyOrderDto marketBuyOrderDto, @RequestHeader("Authorization") String authorizationHeader) {
-        orderQueue.enqueue(new OrderTask(marketBuyOrderDto, tokenProvider.getUsername(authorizationHeader.replace("Bearer ", ""))));
+        String username = tokenProvider.getUsername(authorizationHeader.replace("Bearer ", ""));
+        orderQueue.enqueue(new OrderTask(marketBuyOrderDto.toOrder(username), username));
         return ResponseEntity.ok("주문이 접수되었습니다.");
     }
 
@@ -36,7 +37,8 @@ public class TradeController {
     @ApiResponse(responseCode = "200", description = "주문이 접수되었습니다.")
     @PostMapping("/api/v1/orders/market/sell")
     public ResponseEntity<String> sell(@RequestBody MarketSellOrderDto marketSellOrderDto, @RequestHeader("Authorization") String authorizationHeader) {
-        orderQueue.enqueue(new OrderTask(marketSellOrderDto, tokenProvider.getUsername(authorizationHeader.replace("Bearer ", ""))));
+        String username = tokenProvider.getUsername(authorizationHeader.replace("Bearer ", ""));
+        orderQueue.enqueue(new OrderTask(marketSellOrderDto.toOrder(username), username));
         return ResponseEntity.ok("주문이 접수되었습니다.");
     }
 
@@ -44,7 +46,8 @@ public class TradeController {
     @ApiResponse(responseCode = "200", description = "주문이 접수되었습니다.")
     @PostMapping("/api/v1/orders/limit")
     public ResponseEntity<String> limit(@RequestBody LimitOrderDto limitOrderDto, @RequestHeader("Authorization") String authorizationHeader) {
-        orderQueue.enqueue(new OrderTask(limitOrderDto, tokenProvider.getUsername(authorizationHeader.replace("Bearer ", ""))));
+        String username = tokenProvider.getUsername(authorizationHeader.replace("Bearer ", ""));
+        orderQueue.enqueue(new OrderTask(limitOrderDto.toOrder(username), username));
         return ResponseEntity.ok("주문이 접수되었습니다.");
     }
 }
