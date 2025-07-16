@@ -22,7 +22,7 @@ public class Portfolio {
 
     @Setter
     @Getter
-    @Column(name = "quantity", nullable = false)
+    @Column(name = "quantity", nullable = false, precision = 20, scale = 8)
     private BigDecimal quantity;
 
     @Setter
