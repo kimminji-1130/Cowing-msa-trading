@@ -111,4 +111,9 @@ public class OrderService {
     public String extractUsernameFromToken(String token) {
         return tokenProvider.getUsername(token.replace("Bearer ", ""));
     }
+
+    @Transactional(readOnly = true)
+    public Order findOrderByUsername(String username) {
+        return orderRepository.findOrderByUsername(username);
+    }
 }
