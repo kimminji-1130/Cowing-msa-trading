@@ -1,5 +1,6 @@
 package cowing.project.cowingmsatrading.trade.queue;
 
+import cowing.project.cowingmsatrading.trade.service.OrderService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class OrderQueue {
 
     private final TradeProcessorWrapper tradeProcessorWrapper;
+    private final OrderService orderService;
 
     private final BlockingQueue<OrderTask> queue = new LinkedBlockingQueue<>();
     private ExecutorService executor;
@@ -40,6 +42,7 @@ public class OrderQueue {
      * 큐에 주문 태스크를 추가한다.
      */
     public void enqueue(OrderTask task) {
+        orderService.insertToOrderHistory(task.getOrderDto().toOrder(task.getUsername()));
         queue.add(task);
     }
 

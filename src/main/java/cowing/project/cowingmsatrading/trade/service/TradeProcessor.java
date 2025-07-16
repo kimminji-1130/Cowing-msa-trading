@@ -32,9 +32,6 @@ public class TradeProcessor {
         // 주문이 유효한지 확인한다. 매수 주문일 때, 사용자의 보유 금액이 충분한지 확인하고, 매도 주문일 때, 사용자의 보유 수량이 충분한지 확인한다.
         validateCurrentOrder(orderForExecution);
 
-        // 주문을 처리하기 전에 주문 기록에 저장한다.
-        orderService.insertToOrderHistory(orderForExecution);
-
         //요청 타입에 따라 각 메서드로 분기한다.
         switch (orderForExecution.getOrderType()) {
             case MARKET -> executeMarketOrder(orderForExecution);
