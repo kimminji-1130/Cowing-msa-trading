@@ -7,6 +7,7 @@ import cowing.project.cowingmsatrading.trade.domain.entity.order.Status;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 
@@ -22,6 +23,8 @@ public record PendingOrderResponse(
         OrderPosition orderPosition,
         @Schema(description = "주문 가격", example = "50000000")
         Long orderPrice,
+        @Schema(description = "총 주문 금액", example = "5000000")
+        Long totalPrice,
         @Schema(description = "주문 수량", example = "0.1")
         BigDecimal totalQuantity,
         @Schema(description = "주문 요청 시간", example = "2023-10-01T12:00:00")
@@ -36,7 +39,8 @@ public record PendingOrderResponse(
                 order.getOrderType(),
                 order.getOrderPosition(),
                 order.getOrderPrice(),
-                order.getTotalQuantity(),
+                order.getTotalPrice(),
+                order.getTotalQuantity().setScale(6, RoundingMode.HALF_UP),
                 order.getOrderRequestedAt(),
                 order.getStatus()
         );
