@@ -91,7 +91,6 @@ public class OrderService {
 
             return null;
         });
-
     }
 
     @Transactional(readOnly = true)
@@ -112,8 +111,10 @@ public class OrderService {
         return tokenProvider.getUsername(token.replace("Bearer ", ""));
     }
 
-    @Transactional(readOnly = true)
-    public Order findOrderByUsername(String username) {
-        return orderRepository.findOrderByUsername(username);
+    @Transactional
+    public void cancelOrder(Order order) {
+        order.setStatus(Status.CANCELLED);
+        orderRepository.save(order);
     }
+
 }

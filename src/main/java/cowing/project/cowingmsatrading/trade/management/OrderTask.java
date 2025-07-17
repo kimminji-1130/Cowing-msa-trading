@@ -1,4 +1,4 @@
-package cowing.project.cowingmsatrading.trade.queue;
+package cowing.project.cowingmsatrading.trade.management;
 
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Order;
 import lombok.AllArgsConstructor;
@@ -11,5 +11,4 @@ import lombok.Getter;
 @Getter
 public class OrderTask {
     private final Order order;
-    private final String username;
 }
