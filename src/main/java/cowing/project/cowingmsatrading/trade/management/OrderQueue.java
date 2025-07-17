@@ -1,4 +1,4 @@
-package cowing.project.cowingmsatrading.trade.queue;
+package cowing.project.cowingmsatrading.trade.management;
 
 import cowing.project.cowingmsatrading.trade.service.OrderService;
 import jakarta.annotation.PostConstruct;
@@ -29,7 +29,7 @@ public class OrderQueue {
     @PostConstruct
     private void init() {
         executor = Executors.newSingleThreadExecutor();
-        executor.submit(this::process); // 백그라운드에서 큐 처리 시작
+        executor.submit(this::process);
     }
 
     @PreDestroy
@@ -50,8 +50,11 @@ public class OrderQueue {
         try {
             while (!Thread.currentThread().isInterrupted()) {
                 OrderTask task = queue.take();
-                tradeProcessorWrapper.process(task);
-                log.info("{} 를 시작합니다.", task);
+                try {
+                    log.info("{} 처리를 시작합니다.", task);
+                    tradeProcessorWrapper.process(task);
+                } catch (Exception e) {
+                }
             }
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
