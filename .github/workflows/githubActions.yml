@@ -44,6 +44,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Build builder stage (intermediate cache)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: build
+          push: false
+          tags: ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}-builder:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -52,7 +62,9 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}:latest
-          cache-from: type=gha
+          cache-from: |
+            type=gha
+            type=local,src=/tmp/.buildx-cache
           cache-to: type=gha,mode=max
 
       # 디스코드 알람 전송
