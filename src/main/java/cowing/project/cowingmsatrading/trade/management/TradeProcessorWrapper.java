@@ -1,4 +1,4 @@
-package cowing.project.cowingmsatrading.trade.queue;
+package cowing.project.cowingmsatrading.trade.management;
 
 import cowing.project.cowingmsatrading.trade.service.TradeProcessor;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +14,6 @@ public class TradeProcessorWrapper {
     private final TradeProcessor tradeProcessor;
 
     public void process(OrderTask task) {
-        tradeProcessor.startTradeExecution(task.getOrder(), task.getUsername());
+        tradeProcessor.startTradeExecution(task.getOrder());
     }
 }
