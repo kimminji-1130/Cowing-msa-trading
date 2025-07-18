@@ -20,7 +20,8 @@ WORKDIR /app
 
 COPY --from=build --chown=javauser:javauser /app/build/libs/*.jar /app.jar
 
-RUN chmod 500 ./app.jar
+RUN chmod 500 /app.jar
+
 USER javauser
 
 EXPOSE 8082
