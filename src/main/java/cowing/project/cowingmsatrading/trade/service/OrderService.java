@@ -57,7 +57,7 @@ public class OrderService {
                                 if( order.getOrderPosition() == OrderPosition.SELL ) {
                                     // 매도일 경우
                                     portfolio.setQuantity(portfolio.getQuantity().subtract(totalQuantity));
-                                    portfolio.setTotalCost(portfolio.getTotalCost() + totalPrice.longValue());
+                                    portfolio.setTotalCost(portfolio.getTotalCost() - totalPrice.longValue());
 
                                     // 만약 매도 후 수량이 0 이하가 되면 해당 포트폴리오를 삭제한다.
                                     if (portfolio.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
@@ -85,7 +85,11 @@ public class OrderService {
 
             // 자산 업데이트
             userRepository.findByUsername(order.getUsername()).ifPresent(user -> {
-                user.updateHoldings(totalPrice.longValue());
+                if (order.getOrderPosition() == OrderPosition.BUY) {
+                    user.decreaseHoldings(totalPrice.longValue());
+                } else {
+                    user.increaseHoldings(totalPrice.longValue());
+                }
                 userRepository.save(user);
             });
 
