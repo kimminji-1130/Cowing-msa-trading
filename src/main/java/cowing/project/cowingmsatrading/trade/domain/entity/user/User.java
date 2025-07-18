@@ -42,7 +42,12 @@ public class User {
         this.authority = Authority.ROLE_USER;
     }
 
-    public void updateHoldings(Long totalPrice) {
+    public void increaseHoldings(Long totalPrice) {
+        this.uHoldings = uHoldings + totalPrice;
+    }
+    
+    public void decreaseHoldings(Long totalPrice) {
         this.uHoldings = uHoldings - totalPrice;
     }
+
 }
