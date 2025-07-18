@@ -14,6 +14,6 @@ public class TradeProcessorWrapper {
     private final TradeProcessor tradeProcessor;
 
     public void process(OrderTask task) {
-        tradeProcessor.startTradeExecution(task.getOrder());
+        tradeProcessor.startTradeExecution(task.order());
     }
 }
