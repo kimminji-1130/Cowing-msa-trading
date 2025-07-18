@@ -61,7 +61,7 @@ public class TradeProcessor {
 
     // 시장가 매매 주문 처리
     private void executeMarketOrder(Order order) {
-        boolean isBuyOrder = confirmBuyOrder(order);
+        boolean isBuyOrder = confirmBuyOrder(order.getOrderPosition());
         BigDecimal remaining = initializeRemaining(isBuyOrder, order.getTotalPrice(), order.getTotalQuantity());
 
         TradeExecutionResult result = executeTradeWithCondition(order, remaining, isBuyOrder, null);
@@ -71,7 +71,7 @@ public class TradeProcessor {
 
      // 지정가 매매 주문 처리
     private void executeLimitOrder(Order order) {
-        boolean isBuyOrder = confirmBuyOrder(order);
+        boolean isBuyOrder = confirmBuyOrder(order.getOrderPosition());
         BigDecimal limitPrice = BigDecimal.valueOf(order.getOrderPrice());
         BigDecimal remainingQuantity = order.getTotalQuantity();
 
@@ -181,8 +181,8 @@ public class TradeProcessor {
                 : totalQuantity;
     }
 
-    private boolean confirmBuyOrder(Order order) {
-        return order.getOrderPosition() == OrderPosition.BUY;
+    private boolean confirmBuyOrder(OrderPosition position) {
+        return position == OrderPosition.BUY;
     }
 
     // 매수/매도 주문에 따라 체결 수량 결정
