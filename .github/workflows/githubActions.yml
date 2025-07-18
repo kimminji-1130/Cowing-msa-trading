@@ -48,7 +48,9 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}:${{ steps.version.outputs.version }}
-            ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}:latest 
+            ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # 디스코드 알람 전송
       - name: Send Discord Notification
