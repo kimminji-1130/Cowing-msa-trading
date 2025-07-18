@@ -41,7 +41,7 @@ public class OrderQueue {
      * 큐에 주문 태스크를 추가한다.
      */
     public void enqueue(OrderTask task) {
-        orderService.insertToOrderHistory(task.getOrder());
+        orderService.insertToOrderHistory(task.order());
         queue.add(task);
     }
 
