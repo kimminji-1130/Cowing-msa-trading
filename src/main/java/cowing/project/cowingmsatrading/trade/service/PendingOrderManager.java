@@ -41,6 +41,14 @@ public class PendingOrderManager {
         }
     }
 
+    @Scheduled(fixedRate = 600000) // 10분마다 기록
+    private void checkPendingOrders() {
+        if (pendingOrders.isEmpty()) {
+            return;
+        }
+        log.info("대기열에 미체결 주문이 {}건 존재합니다.", pendingOrders.size());
+    }
+
     private void retryTrade(Order order, BigDecimal remaining) {
         boolean isBuyOrder = order.getOrderPosition() == OrderPosition.BUY;
         BigDecimal limitPrice = BigDecimal.valueOf(order.getOrderPrice());
@@ -50,7 +58,6 @@ public class PendingOrderManager {
         try {
             result = tradeProcessor.executeTradeWithCondition(order, remaining, isBuyOrder, limitPrice);
         } catch (Exception e) {
-            log.info("체결 재시도 후 체결되지 않았으므로 주문을 대기열에 유지합니다. UUID: {}", e.getMessage());
             return;
         }
 
