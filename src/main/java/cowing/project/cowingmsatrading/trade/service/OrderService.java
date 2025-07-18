@@ -45,7 +45,7 @@ public class OrderService {
                     .ifPresentOrElse(
                             portfolio -> {
                                 // 포트폴리오가 존재할 경우, 해당 포트폴리오를 업데이트한다.
-                                if (order.getOrderPosition() == OrderPosition.BUY) {
+                                if ( order.getOrderPosition() == OrderPosition.BUY ) {
                                     portfolio.setQuantity(portfolio.getQuantity().add(totalQuantity));
                                     portfolio.setTotalCost(portfolio.getTotalCost() + totalPrice.longValue());
                                     portfolio.setAverageCost(

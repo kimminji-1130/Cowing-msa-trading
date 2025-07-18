@@ -24,7 +24,7 @@ public class HistoryService {
     public List<TradeHistoryResponse> getTradeHistories(String username) {
         try {
             validateUsername(username);
-            List<Trade> trades = tradeRepository.findAllByUsername(username).get();
+            List<Trade> trades = tradeRepository.findAllByUsername(username);
             return trades.stream()
                     .map(TradeHistoryResponse::of)
                     .toList();
