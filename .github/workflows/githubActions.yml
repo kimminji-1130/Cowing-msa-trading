@@ -65,8 +65,8 @@ jobs:
             ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}:latest
           cache-from: |
-            type=gha
             type=local,src=/tmp/.buildx-cache
+            type=gha
           cache-to: type=gha,mode=max
 
       # 디스코드 알람 전송
