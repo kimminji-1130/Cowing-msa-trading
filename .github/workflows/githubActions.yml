@@ -52,9 +52,7 @@ jobs:
           push: false
           tags: ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name }}-builder:latest
           cache-from: type=gha
-          cache-to: |
-            type=local,dest=/tmp/.buildx-cache
-            type=gha,mode=max
+          cache-to: type=local,dest=/tmp/.buildx-cache
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
