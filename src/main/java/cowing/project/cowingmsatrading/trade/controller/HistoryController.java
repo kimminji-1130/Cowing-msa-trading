@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.naming.AuthenticationException;
 import java.util.List;
 
 @RestController
@@ -42,7 +43,7 @@ public class HistoryController {
     })
     @Parameter(name = "Authorization", description = "Bearer 토큰 형식의 인증 헤더", required = true, example = "Bearer your_jwt_token")
     @GetMapping("/trades")
-    public ResponseEntity<List<TradeHistoryResponse>> getTradeHistories(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<List<TradeHistoryResponse>> getTradeHistories(@RequestHeader("Authorization") String authorizationHeader) throws AuthenticationException {
         return ResponseEntity.ok(historyService.getTradeHistories(orderService.extractUsernameFromToken(authorizationHeader)));
     }
 
@@ -58,7 +59,7 @@ public class HistoryController {
     })
     @Parameter(name = "Authorization", description = "Bearer 토큰 형식의 인증 헤더", required = true, example = "Bearer your_jwt_token")
     @GetMapping("/orders/pending")
-    public ResponseEntity<List<PendingOrderResponse>> getPendingOrders(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<List<PendingOrderResponse>> getPendingOrders(@RequestHeader("Authorization") String authorizationHeader) throws AuthenticationException {
         return ResponseEntity.ok(historyService.getPendingOrders(orderService.extractUsernameFromToken(authorizationHeader)));
     }
 }
