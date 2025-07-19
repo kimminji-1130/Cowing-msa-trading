@@ -4,7 +4,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import javax.security.sasl.AuthenticationException;
+import javax.naming.AuthenticationException;
+
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
