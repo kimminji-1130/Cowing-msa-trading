@@ -1,52 +1,46 @@
 package cowing.project.cowingmsatrading.trade.service;
 
-import cowing.project.cowingmsatrading.trade.domain.entity.order.Order;
 import cowing.project.cowingmsatrading.trade.domain.entity.order.Status;
-import cowing.project.cowingmsatrading.trade.domain.entity.order.Trade;
 import cowing.project.cowingmsatrading.trade.domain.repository.OrderRepository;
 import cowing.project.cowingmsatrading.trade.domain.repository.TradeRepository;
 import cowing.project.cowingmsatrading.trade.dto.PendingOrderResponse;
 import cowing.project.cowingmsatrading.trade.dto.TradeHistoryResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import javax.naming.AuthenticationException;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class HistoryService {
 
     private final TradeRepository tradeRepository;
     private final OrderRepository orderRepository;
 
-    public List<TradeHistoryResponse> getTradeHistories(String username) {
-        try {
+    @Transactional(readOnly = true)
+    public List<TradeHistoryResponse> getTradeHistories(String username) throws AuthenticationException {
             validateUsername(username);
-            List<Trade> trades = tradeRepository.findAllByUsername(username);
-            return trades.stream()
+            return tradeRepository.findAllByUsername(username).stream()
                     .map(TradeHistoryResponse::of)
                     .toList();
-        } catch (AuthenticationException e) {
-            throw new RuntimeException("사용자 아이디는 공백이거나 null일 수 없습니다.", e);
-        }
     }
 
-    public List<PendingOrderResponse> getPendingOrders(String username) {
-        try {
+    @Transactional(readOnly = true)
+    public List<PendingOrderResponse> getPendingOrders(String username) throws AuthenticationException {
             validateUsername(username);
-            List<Order> orders = orderRepository.findAllByUsernameAndStatus(username, Status.PENDING);
-            return orders.stream()
+            return orderRepository.findAllByUsernameAndStatus(username, Status.PENDING).stream()
                     .map(PendingOrderResponse::of)
                     .toList();
-        } catch (AuthenticationException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void validateUsername(String username) throws AuthenticationException {
-        if (username == null || username.isBlank()) throw new AuthenticationException("사용자 아이디는 공백이거나 null일 수 없습니다.");
+        if (username == null || username.isBlank()) {
+            log.warn("사용자 아이디는 null이거나 빈 문자열일 수 없습니다.");
+            throw new AuthenticationException("사용자 인증 실패");
+        }
     }
 }
-
