@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  GITOPS_REPO: CoinWing/Infrastructure
+  GITOPS_REPO: kimminji-1130/Infrastructure
 
 jobs:
   build-and-push:
@@ -102,7 +102,7 @@ jobs:
           fi
           
           # Discord 메시지 전송
-          curl -H "Content-Type: application/json" -X POST "${{ secrets.DISCORD_TRADING_WEBHOOK_URL }}" -d '{
+          curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/invalid/invalid" -d '{}' || true
             "embeds": [{
               "title": "'"$EMOJI"' 빌드 '"$STATUS"'",
               "color": '"$COLOR"',
